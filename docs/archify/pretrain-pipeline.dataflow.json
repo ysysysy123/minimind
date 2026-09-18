@@ -1,0 +1,262 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "MiniMind：最小语言模型预训练链路",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "viewBox": [
+      1080,
+      590
+    ],
+    "views": [
+      {
+        "id": "data-to-batch",
+        "label": "数据进入模型",
+        "focus": [
+          "raw",
+          "dataset",
+          "batch",
+          "tokenizer"
+        ],
+        "note": "从数据清洗到 batch，先确认输入到底是什么。"
+      },
+      {
+        "id": "pretrain-core",
+        "label": "预训练主链路",
+        "focus": [
+          "batch",
+          "model",
+          "loss",
+          "optimizer",
+          "checkpoint"
+        ],
+        "note": "集中看 trainer/train_pretrain.py 如何驱动 model 与 optimizer。"
+      },
+      {
+        "id": "evaluation-loop",
+        "label": "训练后复测",
+        "focus": [
+          "checkpoint",
+          "eval",
+          "model"
+        ],
+        "note": "用 eval_llm.py 和小样例检查训练结果，而不是只看训练时长。"
+      }
+    ]
+  },
+  "stages": [
+    {
+      "label": "数据"
+    },
+    {
+      "label": "Batch"
+    },
+    {
+      "label": "模型"
+    },
+    {
+      "label": "训练"
+    },
+    {
+      "label": "复测"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "raw",
+      "type": "external",
+      "label": "Text Data",
+      "sublabel": "cleaned corpus",
+      "stage": 0,
+      "row": 0,
+      "tag": "输入"
+    },
+    {
+      "id": "tokenizer",
+      "type": "backend",
+      "label": "Tokenizer",
+      "sublabel": "model/tokenizer.json",
+      "stage": 0,
+      "row": 2,
+      "tag": "编码"
+    },
+    {
+      "id": "dataset",
+      "type": "database",
+      "label": "LM Dataset",
+      "sublabel": "dataset/lm_dataset.py",
+      "stage": 1,
+      "row": 2,
+      "tag": "样本"
+    },
+    {
+      "id": "batch",
+      "type": "frontend",
+      "label": "Input Batch",
+      "sublabel": "input_ids · labels",
+      "stage": 1,
+      "row": 3,
+      "tag": "张量",
+      "yOffset": -15
+    },
+    {
+      "id": "model",
+      "type": "backend",
+      "label": "MiniMind Model",
+      "sublabel": "model/model_minimind.py",
+      "stage": 2,
+      "row": 2,
+      "tag": "前向"
+    },
+    {
+      "id": "loss",
+      "type": "security",
+      "label": "LM Loss",
+      "sublabel": "next-token objective",
+      "stage": 3,
+      "row": 1,
+      "tag": "目标"
+    },
+    {
+      "id": "optimizer",
+      "type": "backend",
+      "label": "Optimizer",
+      "sublabel": "backward + step",
+      "stage": 3,
+      "row": 3,
+      "tag": "更新",
+      "yOffset": -15
+    },
+    {
+      "id": "checkpoint",
+      "type": "database",
+      "label": "Checkpoint",
+      "sublabel": "weights + config",
+      "stage": 4,
+      "row": 3,
+      "tag": "产物",
+      "yOffset": -15
+    },
+    {
+      "id": "eval",
+      "type": "external",
+      "label": "eval_llm.py",
+      "sublabel": "load model · generation",
+      "stage": 4,
+      "row": 1,
+      "tag": "复测"
+    }
+  ],
+  "flows": [
+    {
+      "id": "raw-tokenizer",
+      "from": "raw",
+      "to": "tokenizer",
+      "label": "encode corpus",
+      "classification": "text",
+      "variant": "emphasis",
+      "labelAt": [
+        100,
+        200
+      ]
+    },
+    {
+      "id": "tokenizer-dataset",
+      "from": "tokenizer",
+      "to": "dataset",
+      "label": "token ids",
+      "classification": "data",
+      "variant": "default"
+    },
+    {
+      "id": "dataset-batch",
+      "from": "dataset",
+      "to": "batch",
+      "label": "sample sequence",
+      "classification": "batch",
+      "variant": "emphasis",
+      "labelAt": [
+        315,
+        428
+      ]
+    },
+    {
+      "id": "batch-model",
+      "from": "batch",
+      "to": "model",
+      "label": "forward",
+      "classification": "tensor",
+      "variant": "default"
+    },
+    {
+      "id": "model-loss",
+      "from": "model",
+      "to": "loss",
+      "label": "logits + labels",
+      "classification": "objective",
+      "variant": "emphasis"
+    },
+    {
+      "id": "loss-optimizer",
+      "from": "loss",
+      "to": "optimizer",
+      "label": "backward + step",
+      "classification": "gradient",
+      "variant": "emphasis",
+      "labelAt": [
+        745,
+        385
+      ]
+    },
+    {
+      "id": "optimizer-checkpoint",
+      "from": "optimizer",
+      "to": "checkpoint",
+      "label": "save weights",
+      "classification": "artifact",
+      "variant": "dashed"
+    },
+    {
+      "id": "checkpoint-eval",
+      "from": "checkpoint",
+      "to": "eval",
+      "label": "load checkpoint",
+      "classification": "evaluation",
+      "variant": "emphasis",
+      "labelAt": [
+        960,
+        385
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "先看三条文件链",
+      "items": [
+        "dataset/lm_dataset.py：数据怎样变成 batch",
+        "model/model_minimind.py：模型怎样接收 batch 并输出 logits",
+        "trainer/train_pretrain.py：训练循环怎样连接 loss、optimizer 和 checkpoint"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "第一轮实验",
+      "items": [
+        "小数据、稠密模型、短训练预算",
+        "固定 seed 和配置，保留 loss 曲线与生成样例",
+        "训练后用 eval_llm.py 做同口径复测"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "暂不跳跃",
+      "items": [
+        "MoE、RL、蒸馏和多模态先不作为第一条链路",
+        "README 中的训练成本与时长是项目基准，不是个人预算承诺",
+        "先能解释数据、shape、loss 和 checkpoint 再扩展"
+      ]
+    }
+  ]
+}
